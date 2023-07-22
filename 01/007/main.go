@@ -24,63 +24,61 @@ func main() {
 // countDigitsInWords считает количество цифр в словах,
 // выбирая очередные слова с помощью next()
 func countDigitsInWords(next nextFunc) counter {
+
 	pending := make(chan string)
+	go submitWords(next, pending)
+
 	counted := make(chan pair)
+	go countWords(pending, counted)
 
-	// начало решения
+	return fillStats(counted)
 
-	stats := counter{}
-	var pr pair
+}
 
-	go func() {
-		// Пройдите по словам,
-		// посчитайте количество цифр в каждом,
-		// и запишите его в канал counted
-		for {
-			word := next()
-			if word == "" {
-				pending <- word
-				break
-			}
-			pending <- word
-		}
+// начало решения
 
-	}()
-
-	go func() {
-		// Считайте слова из канала pending,
-		// посчитайте количество цифр в каждом,
-		// и запишите его в канал counted
-		for {
-			word := <-pending
-			if word == "" {
-				pr.word = ""
-				pr.count = 0
-				counted <- pr
-				break
-			}
-			count := countDigits(word)
-			pr.count = count
-			pr.word = word
-			counted <- pr
-		}
-	}()
-
+// submitWords отправляет слова на подсчет
+func submitWords(next nextFunc, pending chan string) {
 	for {
-		prr := <-counted
-		if prr.word == "" {
+		word := next()
+		if word == "" {
+			pending <- word
 			break
 		}
-		stats[prr.word] = prr.count
+		pending <- word
 	}
+}
 
-	// Считайте значения из канала counted
-	// и заполните stats.
+// countWords считает цифры в словах
+func countWords(pending chan string, counted chan pair) {
+	var pr pair
+	for {
+		word := <-pending
+		if word == "" {
+			pr.word = ""
+			pr.count = 0
+			counted <- pr
+			break
+		}
+		count := countDigits(word)
+		pr.count = count
+		pr.word = word
+		counted <- pr
+	}
+}
 
-	// В результате stats должна содержать слова
-	// и количество цифр в каждом.
+// fillStats готовит итоговую статистику
+func fillStats(counted chan pair) counter {
+	stats := counter{}
 
-	// конец решения
-
+	for {
+		pr := <-counted
+		if pr.word == "" {
+			break
+		}
+		stats[pr.word] = pr.count
+	}
 	return stats
 }
+
+// конец решения
