@@ -10,7 +10,7 @@ import (
 
 type counter map[string]int
 
-func main() {
+func main_002() {
 	phrase := "0ne 1wo thr33 4068"
 	counts := countDigitsInWords(phrase)
 	printStats(counts)
